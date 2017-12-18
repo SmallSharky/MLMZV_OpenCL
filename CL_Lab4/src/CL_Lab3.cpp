@@ -10,6 +10,8 @@
 #include <string>
 #define CL_USE_DEPRECATED_OPENCL_1_2_APIS
 #include <CL/cl.h>
+#include <stdio.h>
+
 using namespace std;
 
 std::string clke_descr(cl_int err)
@@ -105,7 +107,6 @@ std::string clke_descr(cl_int err)
 		break;
 	}
 
-
 	default:
 	{
 		ret = "Uknown err";
@@ -131,10 +132,11 @@ int main()
 	cout << "Num of devices: " << ret_num_devices << "\n";
 	/* создать контекст */
 	cl_context context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &ret);
-
+	cout << "Create context: " << clke_descr(ret) << "\n";
 	/* создаем команду */
 	cl_command_queue command_queue = clCreateCommandQueue(context, device_id, 0,
 			&ret);
+	cout << "Create queue: " << clke_descr(ret) << "\n";
 
 	cl_program program = NULL;
 	cl_kernel kernel = NULL;
@@ -148,7 +150,7 @@ int main()
 		if (!fp)
 		{
 			fprintf(stderr, "Failed to load kernel.\n");
-			exit(1);
+			return 1;
 		}
 		//source_str = (char *)malloc(MAX_SOURCE_SIZE);
 		while (!feof(fp))
@@ -163,14 +165,16 @@ int main()
 	{
 		printf("EXCEPTION\n");
 	}
-	cout << "get code\n";
+	cout << "Get code: ";
 	const char * sstrptr = source_str.c_str();
+	source_size = source_str.length();
 	//cout<<"--------------------------------------\n";
 	//cout<<source_str<<"\n";
 	//cout<<"--------------------------------------\n";
 
 	/* создать бинарник из кода программы */
-
+	cout << "OK\n";
+	cout << "Code ptr: " << (void *) sstrptr << "\n";
 	program = clCreateProgramWithSource(context, 1, &sstrptr,
 			(const size_t *) &source_size, &ret);
 	cout << "create program: " << clke_descr(ret) << "\n";
@@ -178,6 +182,8 @@ int main()
 
 	ret = clBuildProgram(program, 1, &device_id, NULL, NULL, NULL);
 	cout << "compile: " << clke_descr(ret) << "\n";
+	if (ret)
+		return -110;
 	/* создать кернел */
 	kernel = clCreateKernel(program, "test", &ret);
 	cout << "mk kernel: " << clke_descr(ret) << "\n";
@@ -198,21 +204,21 @@ int main()
 	size_t i_mem = 0;
 	while (i_mem < mem_len)
 	{
-		vec_u_mem[i_mem].x = 1000;
-		vec_u_mem[i_mem].y = 1000;
-		vec_u_mem[i_mem].z = 1000;
-		dot_p_mem[i_mem].x = 0;
-		dot_p_mem[i_mem].y = 0;
-		dot_p_mem[i_mem].z = 0;
-		dot_a_mem[i_mem].x = 100;
-		dot_a_mem[i_mem].y = 0;
-		dot_a_mem[i_mem].z = 0;
-		dot_b_mem[i_mem].x = 0;
-		dot_b_mem[i_mem].y = 100;
-		dot_b_mem[i_mem].z = 0;
-		dot_c_mem[i_mem].x = 0;
-		dot_c_mem[i_mem].y = 0;
-		dot_c_mem[i_mem].z = 100;
+		vec_u_mem[i_mem].x = rand();
+		vec_u_mem[i_mem].y = rand();
+		vec_u_mem[i_mem].z = rand();
+		dot_p_mem[i_mem].x = rand();
+		dot_p_mem[i_mem].y = rand();
+		dot_p_mem[i_mem].z = rand();
+		dot_a_mem[i_mem].x = rand();
+		dot_a_mem[i_mem].y = rand();
+		dot_a_mem[i_mem].z = rand();
+		dot_b_mem[i_mem].x = rand();
+		dot_b_mem[i_mem].y = rand();
+		dot_b_mem[i_mem].z = rand();
+		dot_c_mem[i_mem].x = rand();
+		dot_c_mem[i_mem].y = rand();
+		dot_c_mem[i_mem].z = rand();
 
 		i_mem++;
 	}
@@ -279,12 +285,26 @@ int main()
 			mem_len * sizeof(cl_float3), vec_u_mem, 0, NULL, NULL);
 	ret = clEnqueueReadBuffer(command_queue, p_mo, CL_TRUE, 0,
 			mem_len * sizeof(cl_float3), dot_p_mem, 0, NULL, NULL);
+	ret = clEnqueueReadBuffer(command_queue, a_mo, CL_TRUE, 0,
+			mem_len * sizeof(cl_float3), dot_a_mem, 0, NULL, NULL);
+	ret = clEnqueueReadBuffer(command_queue, b_mo, CL_TRUE, 0,
+			mem_len * sizeof(cl_float3), dot_b_mem, 0, NULL, NULL);
+	ret = clEnqueueReadBuffer(command_queue, c_mo, CL_TRUE, 0,
+			mem_len * sizeof(cl_float3), dot_c_mem, 0, NULL, NULL);
 	size_t i = 0;
 
 	while (i < mem_len)
 	{
-		cout << "V[" << i << "]: " << vec_u_mem[i].x <<", "<< vec_u_mem[i].y <<", "<< vec_u_mem[i].z <<" : ";
-		cout << dot_p_mem[i].x<<", "<<dot_p_mem[i].y<<", "<<dot_p_mem[i].z<<"\n";
+		if (vec_u_mem[i].x == 1)
+		{
+			/*cout << "V[" << i << "]: " << vec_u_mem[i].x << ", "
+					<< vec_u_mem[i].y << ", " << vec_u_mem[i].z << "\t";*/
+			cout << "V[" << i << "]: ";
+			cout << dot_p_mem[i].x << ", " << dot_p_mem[i].y << ", "
+					<< dot_p_mem[i].z << "\n";
+			//cout << dot_a_mem[i].x<<", "<<dot_a_mem[i].y<<", "<<dot_a_mem[i].z<<"\n";
+		}
+
 		i++;
 	}
 	return 0;
