@@ -1,0 +1,12 @@
+
+__kernel void test(__global float* _x)
+{
+// получаем текущий id.
+int id = get_global_id(0);
+float x = _x[id];
+
+float ret = sin(x)/x;
+
+_x[id] = ret;
+
+}
